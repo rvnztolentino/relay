@@ -1,7 +1,7 @@
 // Loads the single repo-root .env and exposes a typed config object.
 //
-// Why this file is imported FIRST in index.js: ES module imports are hoisted and
-// evaluated before any other top-level code, so if db.js/redis.js read process.env
+// Why this file is imported FIRST in index.ts: ES module imports are hoisted and
+// evaluated before any other top-level code, so if db.ts/redis.ts read process.env
 // at import time, dotenv must already have run. Importing this module first
 // guarantees the .env is loaded before any consumer reads `config`.
 
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// server/src/config/env.js -> repo root is three levels up.
+// server/src/config/env.ts -> repo root is three levels up.
 dotenv.config({ path: join(here, '../../../.env') });
 
 export const config = {
