@@ -23,4 +23,9 @@ export const config = {
     database: process.env.POSTGRES_DB ?? 'relay',
   },
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  jwt: {
+    // Read from .env; token.ts fails loudly at sign/verify time if it's empty.
+    secret: process.env.JWT_SECRET ?? '',
+    expiresInSeconds: 60 * 60 * 24 * 7, // 7 days
+  },
 };
