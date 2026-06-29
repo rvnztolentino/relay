@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Relay API — Express 5 on Node, raw SQL via pg, Redis via ioredis.",
+  "description": "Relay API — Express 5 on Node (TypeScript), raw SQL via pg, Redis via ioredis.",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "cors": "2.8.6",
@@ -19,6 +21,11 @@
     "pg": "8.22.0"
   },
   "devDependencies": {
-    "nodemon": "3.1.14"
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "24.13.2",
+    "@types/pg": "8.20.0",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3"
   }
 }

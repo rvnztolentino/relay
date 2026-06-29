@@ -1,6 +1,6 @@
 // Relay API entry point.
 // NOTE: ./config/env.js MUST be imported before anything that reads process.env,
-// so it loads the .env file first (see the comment in env.js).
+// so it loads the .env file first (see the comment in env.ts).
 import { config } from './config/env.js';
 
 import express from 'express';

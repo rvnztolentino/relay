@@ -2,7 +2,7 @@
 // enableOfflineQueue:false + a single retry per request make /health fail fast
 // when Redis is down, instead of queueing the PING until a connection exists.
 
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { config } from './env.js';
 
 export const redis = new Redis(config.redisUrl, {
