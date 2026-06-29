@@ -7,6 +7,9 @@ import express from 'express';
 import cors from 'cors';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
+import projectsRouter from './routes/projects.js';
+import tasksRouter from './routes/tasks.js';
+import { requireAuth } from './middleware/auth.js';
 
 const app = express();
 
@@ -15,6 +18,9 @@ app.use(express.json());
 
 app.use('/health', healthRouter);
 app.use('/api/auth', authRouter);
+// All project/task routes require a valid JWT.
+app.use('/api/projects', requireAuth, projectsRouter);
+app.use('/api/tasks', requireAuth, tasksRouter);
 
 // 404 fallback (Express 5: a middleware with no path matches everything left).
 app.use((req, res) => {
