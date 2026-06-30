@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword } from '../lib/password.js';
 import { signToken } from '../lib/token.js';
 import { errMessage, isUniqueViolation } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { loginRateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -54,8 +55,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+// POST /api/auth/login  (rate-limited: 5 attempts per IP per 15 min)
+router.post('/login', loginRateLimiter, async (req, res) => {
   const { email, password } = req.body ?? {};
 
   if (typeof email !== 'string' || typeof password !== 'string') {

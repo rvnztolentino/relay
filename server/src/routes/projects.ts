@@ -13,6 +13,21 @@ import { pool } from '../config/db.js';
 import { errMessage, isUniqueViolation } from '../lib/errors.js';
 import { isProjectMember } from '../lib/access.js';
 import { parseId, isTaskStatus, parseDueDate } from '../lib/validate.js';
+import {
+  getCachedProjectList,
+  setCachedProjectList,
+  bustProjectListCache,
+} from '../lib/cache.js';
+import { enqueueTaskAssigned } from '../lib/queue.js';
+
+// Member ids of a project — used to bust every affected user's list cache.
+async function projectMemberIds(projectId: number): Promise<number[]> {
+  const { rows } = await pool.query(
+    `SELECT user_id FROM project_members WHERE project_id = $1`,
+    [projectId],
+  );
+  return rows.map((r) => Number(r.user_id));
+}
 
 const router = Router();
 
@@ -39,6 +54,7 @@ router.post('/', async (req, res) => {
       [project.id, req.user!.id],
     );
     await client.query('COMMIT');
+    await bustProjectListCache([req.user!.id]); // creator's list changed
     return res.status(201).json({ project });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -49,8 +65,12 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/projects
+// GET /api/projects  (cached per user, 60s TTL)
 router.get('/', async (req, res) => {
+  const userId = req.user!.id;
+  const cached = await getCachedProjectList(userId);
+  if (cached) return res.json({ projects: cached, cached: true });
+
   try {
     const { rows } = await pool.query(
       `SELECT p.id, p.name, p.description, p.owner_id, p.created_at, pm.role
@@ -58,9 +78,10 @@ router.get('/', async (req, res) => {
          JOIN project_members pm ON pm.project_id = p.id
         WHERE pm.user_id = $1
         ORDER BY p.created_at DESC`,
-      [req.user!.id],
+      [userId],
     );
-    return res.json({ projects: rows });
+    await setCachedProjectList(userId, rows);
+    return res.json({ projects: rows, cached: false });
   } catch (err) {
     console.error('[projects] list failed:', errMessage(err));
     return res.status(500).json({ error: 'Failed to list projects' });
@@ -144,6 +165,8 @@ router.put('/:id', async (req, res) => {
        RETURNING id, name, description, owner_id, created_at`,
       values,
     );
+    // name/description appear in every member's cached list.
+    await bustProjectListCache(await projectMemberIds(projectId));
     return res.json({ project: rows[0] });
   } catch (err) {
     console.error('[projects] update failed:', errMessage(err));
@@ -162,8 +185,11 @@ router.delete('/:id', async (req, res) => {
     if (ownerId !== req.user!.id) {
       return res.status(403).json({ error: 'Only the project owner can delete it' });
     }
+    // Capture members before the cascade removes the rows, so we can bust their caches.
+    const memberIds = await projectMemberIds(projectId);
     // FK ON DELETE CASCADE removes members, tasks, comments, and attachments.
     await pool.query(`DELETE FROM projects WHERE id = $1`, [projectId]);
+    await bustProjectListCache(memberIds);
     return res.status(204).send();
   } catch (err) {
     console.error('[projects] delete failed:', errMessage(err));
@@ -199,6 +225,7 @@ router.post('/:id/members', async (req, res) => {
       `INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, $3)`,
       [projectId, user.id, memberRole],
     );
+    await bustProjectListCache([Number(user.id)]); // the new member now sees this project
     return res
       .status(201)
       .json({ member: { user_id: user.id, name: user.name, email: user.email, role: memberRole } });
@@ -283,7 +310,18 @@ router.post('/:id/tasks', async (req, res) => {
         due.value,
       ],
     );
-    return res.status(201).json({ task: rows[0] });
+    const task = rows[0];
+    // Notify the assignee (unless they assigned it to themselves).
+    if (assigneeId !== null && assigneeId !== req.user!.id) {
+      await enqueueTaskAssigned({
+        taskId: Number(task.id),
+        title: task.title,
+        projectId,
+        assigneeId,
+        assignedBy: req.user!.id,
+      });
+    }
+    return res.status(201).json({ task });
   } catch (err) {
     console.error('[projects] create task failed:', errMessage(err));
     return res.status(500).json({ error: 'Failed to create task' });
