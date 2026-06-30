@@ -1,0 +1,574 @@
+{
+  "info": {
+    "name": "Relay API",
+    "description": "Manual + smoke tests for the Relay backend (Phase 3 auth + Phase 4 core CRUD).\n\nImport the companion environment `Relay.postman_environment.json` and select it (top-right). Requests chain through environment variables: the auth requests save `{{token}}` / `{{bob_token}}` / `{{bob_id}}`, create-project saves `{{project_id}}`, and create-task saves `{{task_id}}`. Run the whole collection top-to-bottom (Collection Runner) for a smoke test, or fire requests individually.\n\nCollection-level auth sends `Authorization: Bearer {{token}}` (Alice). Public requests override to No Auth; the Bob requests override to `Bearer {{bob_token}}`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Pings Postgres (SELECT 1) and Redis (PING). 200 when both are up, 503 when degraded."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health reachable (200 or 503)', () => pm.expect([200, 503]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST register — Alice",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{alice_email}}\",\n  \"password\": \"supersecret1\",\n  \"name\": \"Alice\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Create Alice. Re-running returns 409 (email already registered) — that's fine; the next Login request gets a fresh token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register Alice (201 new, or 409 already exists)', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('token', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST login — Alice",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{alice_email}}\",\n  \"password\": \"supersecret1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Log Alice in and save her JWT to {{token}}. This is the token the collection sends by default."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login Alice 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.environment.set('token', d.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET me (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Protected route — inherits Bearer {{token}}. Returns the current user (no password_hash). Clear {{token}} to see a 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no password_hash leaked', () => pm.expect(pm.response.json().user).to.not.have.property('password_hash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST register — Bob",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bob_email}}\",\n  \"password\": \"supersecret2\",\n  \"name\": \"Bob\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Second user so we can test membership and authorization. Re-running returns 409 — Login Bob below still gets a token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register Bob (201 new, or 409 already exists)', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  pm.environment.set('bob_token', d.token);",
+                  "  pm.environment.set('bob_id', d.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST login — Bob",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bob_email}}\",\n  \"password\": \"supersecret2\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Save Bob's JWT to {{bob_token}} and his id to {{bob_id}} (used as a task assignee)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login Bob 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.environment.set('bob_token', d.token);",
+                  "pm.environment.set('bob_id', d.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST login — wrong password (expect 401)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{alice_email}}\",\n  \"password\": \"wrong-password\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Generic 401 — the same message is returned for a wrong password and an unknown email, so registered emails aren't revealed."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('wrong password 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "POST create project (Alice)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Project\",\n  \"description\": \"Created from Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            },
+            "description": "Alice creates a project and becomes its owner (plus an 'owner' member row). Saves {{project_id}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('create project 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('project_id', pm.response.json().project.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET list projects (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            },
+            "description": "Only projects Alice belongs to, each with her role."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list projects 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET project detail (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{project_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            },
+            "description": "Project plus its member list. Members only — a non-member gets 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('project detail 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT update project (Alice, owner)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Project (renamed)\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{project_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            },
+            "description": "Owner-only update. A non-owner member gets 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('update project 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST add member — Bob (Alice, owner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bob_email}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{project_id}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{project_id}}", "members"]
+            },
+            "description": "Owner adds Bob by email. 201 new, 409 if already a member, 404 if the email isn't a user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('add member (201 new, or 409 already a member)', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST create task — assigned to Bob (Alice)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"First task\",\n  \"description\": \"Wire up Postman\",\n  \"status\": \"in_progress\",\n  \"assignee_id\": \"{{bob_id}}\",\n  \"due_date\": \"2026-07-15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{project_id}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{project_id}}", "tasks"]
+            },
+            "description": "Assignee must be a project member (Bob was added above). Saves {{task_id}}. due_date round-trips as the same YYYY-MM-DD string, no timezone shift."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('create task 201', () => pm.response.to.have.status(201));",
+                  "const t = pm.response.json().task;",
+                  "pm.environment.set('task_id', t.id);",
+                  "pm.test('due_date round-trips as 2026-07-15', () => pm.expect(t.due_date).to.eql('2026-07-15'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET list tasks (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{project_id}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{project_id}}", "tasks"]
+            },
+            "description": "Tasks come back with JOINed assignee_name and created_by_name."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list tasks 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "GET task detail (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('task detail 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT update task — status done (Bob, member)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{bob_token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"done\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}"]
+            },
+            "description": "Any project member can update a task — this one runs as Bob (Bearer {{bob_token}})."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('update task 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST add comment (Bob, member)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{bob_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"On it.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}", "comments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('add comment 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET list comments (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}", "comments"]
+            },
+            "description": "Comments include the JOINed author user_name."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list comments 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE task (Alice, owner) — 204",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}"]
+            },
+            "description": "Deletable by the task creator or the project owner. Alice (owner) gets 204. A plain member would get 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete task 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
