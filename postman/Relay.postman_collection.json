@@ -545,6 +545,85 @@
           ]
         },
         {
+          "name": "POST upload attachment (Alice)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}/attachments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}", "attachments"]
+            },
+            "description": "multipart/form-data with one field named 'file'. In the Body tab, click the 'file' row and choose a file before sending (don't set Content-Type — Postman adds the multipart boundary). The file is stored under a generated UUID name; the response saves {{attachment_filename}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('upload (201 with a file attached, or 400 if none selected)', () => pm.expect([201, 400]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('attachment_filename', pm.response.json().attachment.filename);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET list attachments (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}/attachments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{task_id}}", "attachments"]
+            },
+            "description": "Attachments for the task, each with the JOINed uploaded_by_name."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list attachments 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET download attachment (Alice)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attachments/{{attachment_filename}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attachments", "{{attachment_filename}}"]
+            },
+            "description": "Serves the file to project members (uses {{attachment_filename}} from the upload above). The response carries the original name in Content-Disposition. A non-member gets 403; an unknown/traversal name gets 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('download (200 if a file was uploaded, else 404)', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "DELETE task (Alice, owner) — 204",
           "request": {
             "method": "DELETE",

@@ -2,14 +2,18 @@
 //   GET    /api/tasks/:id            task detail (members only)
 //   PUT    /api/tasks/:id            update fields (members only)
 //   DELETE /api/tasks/:id            delete (task creator or project owner)
-//   GET    /api/tasks/:id/comments   list comments (members only)
-//   POST   /api/tasks/:id/comments   add a comment (members only)
+//   GET    /api/tasks/:id/comments      list comments (members only)
+//   POST   /api/tasks/:id/comments      add a comment (members only)
+//   GET    /api/tasks/:id/attachments   list attachments (members only)
+//   POST   /api/tasks/:id/attachments   upload a file (members only)
 
 import { Router } from 'express';
+import { unlink } from 'node:fs/promises';
 import { pool } from '../config/db.js';
 import { errMessage } from '../lib/errors.js';
 import { getTaskAccess, isProjectMember } from '../lib/access.js';
 import { parseId, isTaskStatus, parseDueDate } from '../lib/validate.js';
+import { upload } from '../config/uploads.js';
 
 const router = Router();
 
@@ -197,6 +201,71 @@ router.post('/:id/comments', async (req, res) => {
   } catch (err) {
     console.error('[tasks] add comment failed:', errMessage(err));
     return res.status(500).json({ error: 'Failed to add comment' });
+  }
+});
+
+// GET /api/tasks/:id/attachments
+router.get('/:id/attachments', async (req, res) => {
+  const taskId = parseId(req.params.id);
+  if (!taskId) return res.status(400).json({ error: 'Invalid task id' });
+
+  try {
+    const access = await getTaskAccess(req.user!.id, taskId);
+    if (!access) return res.status(404).json({ error: 'Task not found' });
+    if (!access.isMember) {
+      return res.status(403).json({ error: "You are not a member of this task's project" });
+    }
+    const { rows } = await pool.query(
+      `SELECT a.id, a.task_id, a.uploaded_by, u.name AS uploaded_by_name,
+              a.filename, a.original_name, a.file_size, a.mime_type, a.created_at
+         FROM attachments a
+         JOIN users u ON u.id = a.uploaded_by
+        WHERE a.task_id = $1
+        ORDER BY a.created_at DESC`,
+      [taskId],
+    );
+    return res.json({ attachments: rows });
+  } catch (err) {
+    console.error('[tasks] list attachments failed:', errMessage(err));
+    return res.status(500).json({ error: 'Failed to list attachments' });
+  }
+});
+
+// POST /api/tasks/:id/attachments  (multipart/form-data, field name "file")
+// Multer writes the file to disk first; if the request turns out to be
+// unauthorized or invalid, we remove the orphaned file before returning.
+router.post('/:id/attachments', upload.single('file'), async (req, res) => {
+  const taskId = parseId(req.params.id);
+  if (!taskId) {
+    if (req.file) await unlink(req.file.path).catch(() => {});
+    return res.status(400).json({ error: 'Invalid task id' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'A file is required (form field "file")' });
+  }
+
+  try {
+    const access = await getTaskAccess(req.user!.id, taskId);
+    if (!access) {
+      await unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    if (!access.isMember) {
+      await unlink(req.file.path).catch(() => {});
+      return res.status(403).json({ error: "You are not a member of this task's project" });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO attachments (task_id, uploaded_by, filename, original_name, file_size, mime_type)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, task_id, uploaded_by, filename, original_name, file_size, mime_type, created_at`,
+      [taskId, req.user!.id, req.file.filename, req.file.originalname, req.file.size, req.file.mimetype],
+    );
+    return res.status(201).json({ attachment: rows[0] });
+  } catch (err) {
+    if (req.file) await unlink(req.file.path).catch(() => {});
+    console.error('[tasks] upload attachment failed:', errMessage(err));
+    return res.status(500).json({ error: 'Failed to upload attachment' });
   }
 });
 
