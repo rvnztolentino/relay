@@ -56,8 +56,18 @@ override to `Bearer {{bob_token}}` to prove that a different member can update a
 2. **Projects** — Alice creates a project (becomes owner), lists/reads/updates it, and adds Bob as a
    member by email.
 3. **Tasks** — Alice creates a task assigned to Bob (assignee must be a member), `due_date` round-trips
-   as `2026-07-15` with no timezone shift, Bob updates the status to `done` and comments, then Alice
-   (owner) deletes the task (**204**).
+   as `2026-07-15` with no timezone shift, Bob updates the status to `done` and comments, uploads/lists/
+   downloads an **attachment**, then Alice (owner) deletes the task (**204**).
+
+### Attachments (pick a file first)
+
+The Tasks folder includes **POST upload attachment**, **GET list attachments**, and
+**GET download attachment**. Upload is `multipart/form-data`: open the request's **Body** tab, click
+the **file** row, and **Choose Files** to pick something before sending — don't add a `Content-Type`
+header, Postman sets the multipart boundary itself. On success it saves `{{attachment_filename}}`,
+which the download request then uses. In the one-click Collection Runner these pass as 201/200 only if
+a file is attached; with no file selected they fall back to 400/404 (still green) so the run doesn't
+break — attach a file and resend to exercise them for real.
 
 ## Trying the negative cases
 
