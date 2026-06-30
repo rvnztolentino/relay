@@ -1,0 +1,210 @@
+/* Relay — 2000s intranet style. Flat colors, 1px borders, system fonts, no
+   shadows, gradients, or animations. Think early Basecamp / phpBB. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eeeeee;
+  color: #000000;
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+a {
+  color: #336699;
+  text-decoration: underline;
+}
+a:hover {
+  color: #244b6f;
+}
+
+/* Header bar */
+.header {
+  background: #336699;
+  color: #ffffff;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.container {
+  max-width: 820px;
+  margin: 16px auto;
+  padding: 0 16px;
+}
+
+h2 {
+  font-size: 16px;
+  border-bottom: 1px solid #cccccc;
+  padding-bottom: 4px;
+}
+h3 {
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.muted {
+  color: #666666;
+}
+.error {
+  color: #cc0000;
+  border: 1px solid #cc0000;
+  background: #ffeeee;
+  padding: 6px 8px;
+}
+.hint {
+  display: block;
+  color: #666666;
+  font-size: 11px;
+}
+.crumb {
+  margin: 0 0 8px;
+}
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Tables — alternating rows, 1px borders */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+}
+th,
+td {
+  border: 1px solid #cccccc;
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: #dde6ef;
+}
+tbody tr:nth-child(even) {
+  background: #f5f5f5;
+}
+table.kv th {
+  width: 120px;
+  background: #f5f5f5;
+}
+
+/* Forms */
+input,
+select,
+button,
+textarea {
+  font-family: inherit;
+  font-size: 13px;
+}
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='date'],
+select,
+textarea {
+  border: 1px solid #999999;
+  padding: 4px 6px;
+  background: #ffffff;
+}
+label {
+  display: block;
+  margin: 8px 0;
+}
+label input,
+label select {
+  display: block;
+  margin-top: 2px;
+  min-width: 240px;
+}
+
+button {
+  border: 1px solid #888888;
+  background: #dddddd;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+button:hover {
+  background: #cccccc;
+}
+button:disabled {
+  color: #888888;
+  cursor: default;
+}
+button.danger {
+  border-color: #aa3333;
+  background: #f0d0d0;
+}
+button.danger:hover {
+  background: #e6b8b8;
+}
+
+.inline-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+}
+.inline-form input {
+  flex: 1;
+}
+.stack-form {
+  max-width: 320px;
+}
+
+/* Auth pages */
+.auth-box {
+  max-width: 320px;
+  margin: 48px auto;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  padding: 20px;
+}
+.auth-box h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #336699;
+}
+.auth-box button {
+  margin-top: 8px;
+}
+
+/* Comments */
+.comments {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.comments li {
+  border: 1px solid #cccccc;
+  background: #ffffff;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+}
+.comment-meta {
+  display: block;
+  color: #666666;
+  font-size: 11px;
+}
+.comment-body {
+  display: block;
+}
