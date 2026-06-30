@@ -14,6 +14,7 @@ import { errMessage } from '../lib/errors.js';
 import { getTaskAccess, isProjectMember } from '../lib/access.js';
 import { parseId, isTaskStatus, parseDueDate } from '../lib/validate.js';
 import { upload } from '../config/uploads.js';
+import { enqueueTaskAssigned } from '../lib/queue.js';
 
 const router = Router();
 
@@ -122,7 +123,18 @@ router.put('/:id', async (req, res) => {
        RETURNING id, project_id, assignee_id, created_by, title, description, status, due_date, created_at`,
       values,
     );
-    return res.json({ task: rows[0] });
+    const task = rows[0];
+    // Notify on a (re)assignment to someone other than the editor.
+    if (assigneeProvided && assigneeId !== null && assigneeId !== req.user!.id) {
+      await enqueueTaskAssigned({
+        taskId: Number(task.id),
+        title: task.title,
+        projectId: access.projectId,
+        assigneeId,
+        assignedBy: req.user!.id,
+      });
+    }
+    return res.json({ task });
   } catch (err) {
     console.error('[tasks] update failed:', errMessage(err));
     return res.status(500).json({ error: 'Failed to update task' });
