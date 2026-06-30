@@ -10,7 +10,11 @@ import { hashPassword, verifyPassword } from '../lib/password.js';
 import { signToken } from '../lib/token.js';
 import { errMessage, isUniqueViolation } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
-import { loginRateLimiter } from '../middleware/rateLimit.js';
+import {
+  loginRateLimiter,
+  registerLoginFailure,
+  clearLoginAttempts,
+} from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -75,8 +79,11 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     // One generic message whether the email is unknown or the password is wrong,
     // so we don't reveal which emails are registered.
     if (!row || !(await verifyPassword(password, row.password_hash))) {
+      await registerLoginFailure(req); // count this failure toward the IP limit
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    await clearLoginAttempts(req); // a correct login wipes the IP's failure counter
 
     const user = {
       id: row.id,
