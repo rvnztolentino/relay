@@ -1,7 +1,7 @@
-// Notification worker — Phase 6. Runs as its own process (npm run worker).
+// Notification worker - Phase 6. Runs as its own process (npm run worker).
 // Blocks on the Redis queue with BRPOP and "delivers" each task-assignment job.
 // There's no real push service in this learning project, so delivery is a log
-// line — the point is the producer/consumer mechanics: the API enqueues and
+// line; the point is the producer/consumer mechanics: the API enqueues and
 // returns immediately, and this worker drains the queue independently.
 
 import { config } from './config/env.js'; // load .env before anything reads it

@@ -1,4 +1,4 @@
-// Task routes — Phase 4. All routes require auth (mounted with requireAuth).
+// Task routes - Phase 4. All routes require auth (mounted with requireAuth).
 //   GET    /api/tasks/:id            task detail (members only)
 //   PUT    /api/tasks/:id            update fields (members only)
 //   DELETE /api/tasks/:id            delete (task creator or project owner)

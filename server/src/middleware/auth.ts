@@ -1,4 +1,4 @@
-// requireAuth — gate for protected routes.
+// requireAuth - gate for protected routes.
 // Expects an `Authorization: Bearer <token>` header, verifies the JWT, and
 // attaches { id, email } to req.user. Responds 401 on any failure.
 

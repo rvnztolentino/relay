@@ -1,4 +1,4 @@
-// Authorization helpers — membership and ownership checks against the DB.
+// Authorization helpers - membership and ownership checks against the DB.
 
 import { pool } from '../config/db.js';
 
@@ -20,7 +20,7 @@ export interface TaskAccess {
 }
 
 // Resolve a task's project, its creator, the project owner, and whether the
-// given user is a member — in one JOIN. Returns null if the task doesn't exist.
+// given user is a member, in one JOIN. Returns null if the task doesn't exist.
 export async function getTaskAccess(userId: number, taskId: number): Promise<TaskAccess | null> {
   const { rows } = await pool.query(
     `SELECT t.project_id,

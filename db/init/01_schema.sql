@@ -1,4 +1,4 @@
--- Relay schema (raw SQL, by hand — no ORM yet).
+-- Relay schema (raw SQL, by hand - no ORM yet).
 -- Auto-applied by the Postgres image on FIRST boot via /docker-entrypoint-initdb.d.
 -- Re-runnable in DBeaver after `docker compose down -v` (fresh volume).
 

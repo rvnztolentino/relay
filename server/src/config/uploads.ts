@@ -1,4 +1,4 @@
-// Multer upload config — Phase 5.
+// Multer upload config - Phase 5.
 // The API runs on the host (only Postgres/Redis are containerized), so uploaded
 // files persist in a local `server/uploads/` folder rather than a Docker volume.
 // That folder is gitignored. Files are stored under a generated UUID name (never

@@ -12,7 +12,7 @@ export interface TokenPayload {
 // Fail loudly if the secret is missing, rather than signing with an empty key.
 function secret(): string {
   if (!config.jwt.secret) {
-    throw new Error('JWT_SECRET is not set — add it to the repo-root .env');
+    throw new Error('JWT_SECRET is not set. Add it to the repo-root .env');
   }
   return config.jwt.secret;
 }

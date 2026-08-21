@@ -1,4 +1,4 @@
-// Project-list cache — Phase 6.
+// Project-list cache - Phase 6.
 // Each user's project list is cached under cache:projects:user:<id> for 60s and
 // busted on any write that changes what that list contains. Every call is wrapped
 // so a Redis outage degrades to a plain DB read instead of failing the request.

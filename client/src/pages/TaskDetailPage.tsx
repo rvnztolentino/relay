@@ -147,7 +147,7 @@ export function TaskDetailPage() {
           </tr>
           <tr>
             <th>Assignee</th>
-            <td>{task.assignee_name ?? '—'}</td>
+            <td>{task.assignee_name ?? '-'}</td>
           </tr>
           <tr>
             <th>Due</th>
@@ -156,7 +156,7 @@ export function TaskDetailPage() {
           <tr>
             <th>Created by</th>
             <td>
-              {task.created_by_name ?? '—'} · {fmtDate(task.created_at)}
+              {task.created_by_name ?? '-'} · {fmtDate(task.created_at)}
             </td>
           </tr>
         </tbody>
@@ -178,7 +178,7 @@ export function TaskDetailPage() {
             <tr key={a.id}>
               <td>{a.original_name}</td>
               <td>{fmtBytes(a.file_size)}</td>
-              <td>{a.uploaded_by_name ?? '—'}</td>
+              <td>{a.uploaded_by_name ?? '-'}</td>
               <td>
                 <button type="button" onClick={() => download(a)}>
                   Download

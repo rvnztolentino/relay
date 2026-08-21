@@ -1,4 +1,4 @@
-/* Relay — 2000s intranet style. Flat colors, 1px borders, system fonts, no
+/* Relay - 2000s intranet style. Flat colors, 1px borders, system fonts, no
    shadows, gradients, or animations. Think early Basecamp / phpBB. */
 
 * {
@@ -82,7 +82,7 @@ h3 {
   align-items: center;
 }
 
-/* Tables — alternating rows, 1px borders */
+/* Tables - alternating rows, 1px borders */
 table {
   width: 100%;
   border-collapse: collapse;

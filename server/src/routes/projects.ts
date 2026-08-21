@@ -1,4 +1,4 @@
-// Project routes — Phase 4. All routes require auth (mounted with requireAuth).
+// Project routes - Phase 4. All routes require auth (mounted with requireAuth).
 //   POST   /api/projects                 create (creator becomes owner + member)
 //   GET    /api/projects                 list projects the user belongs to
 //   GET    /api/projects/:id             project detail + member list (members only)
@@ -20,7 +20,7 @@ import {
 } from '../lib/cache.js';
 import { enqueueTaskAssigned } from '../lib/queue.js';
 
-// Member ids of a project — used to bust every affected user's list cache.
+// Member ids of a project, used to bust every affected user's list cache.
 async function projectMemberIds(projectId: number): Promise<number[]> {
   const { rows } = await pool.query(
     `SELECT user_id FROM project_members WHERE project_id = $1`,

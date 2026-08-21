@@ -1,4 +1,4 @@
-// Attachment serving — Phase 5. Mounted at /api/attachments behind requireAuth.
+// Attachment serving - Phase 5. Mounted at /api/attachments behind requireAuth.
 //   GET /api/attachments/:filename   download a file (members of its project only)
 //
 // The upload endpoint lives on the tasks router (POST /api/tasks/:id/attachments)

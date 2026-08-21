@@ -1,4 +1,4 @@
-// Notification queue producer — Phase 6.
+// Notification queue producer - Phase 6.
 // When a task is assigned, we push a job onto a Redis list and return immediately;
 // a separate worker process (src/worker.ts) consumes it. Enqueuing is best-effort:
 // a Redis outage must not fail task creation, so failures are logged and swallowed.

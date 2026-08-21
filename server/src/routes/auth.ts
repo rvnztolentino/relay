@@ -1,4 +1,4 @@
-// Auth routes — Phase 3.
+// Auth routes - Phase 3.
 //   POST /api/auth/register  (public)  create a user, return a JWT
 //   POST /api/auth/login     (public)  verify credentials, return a JWT
 //   GET  /api/auth/me        (private) return the current user's profile
@@ -18,7 +18,7 @@ import {
 
 const router = Router();
 
-// Deliberately simple email check — good enough to reject obvious junk.
+// Deliberately simple email check, good enough to reject obvious junk.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 

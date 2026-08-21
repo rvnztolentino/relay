@@ -1,4 +1,4 @@
-// GET /health — a real environment check: pings Postgres and Redis.
+// GET /health - a real environment check: pings Postgres and Redis.
 // Returns 200 only when both are reachable, otherwise 503.
 
 import { Router } from 'express';

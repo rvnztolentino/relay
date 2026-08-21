@@ -71,14 +71,14 @@ export function ProjectsPage() {
                 <td>
                   <Link to={`/projects/${p.id}`}>{p.name}</Link>
                 </td>
-                <td>{p.role ?? '—'}</td>
+                <td>{p.role ?? '-'}</td>
                 <td>{fmtDate(p.created_at)}</td>
               </tr>
             ))}
             {projects.length === 0 && (
               <tr>
                 <td colSpan={3} className="muted">
-                  No projects yet — create one above.
+                  No projects yet. Create one above.
                 </td>
               </tr>
             )}

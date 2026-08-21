@@ -4,7 +4,7 @@ node_modules/
 # Environment (never commit real secrets)
 .env
 
-# Uploaded files (Phase 5 — kept out of git)
+# Uploaded files (Phase 5 - kept out of git)
 server/uploads/
 
 # Build output

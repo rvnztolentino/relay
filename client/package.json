@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Relay frontend — React + Vite (TypeScript), 2000s-intranet UI.",
+  "description": "Relay frontend - React + Vite (TypeScript), 2000s-intranet UI.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

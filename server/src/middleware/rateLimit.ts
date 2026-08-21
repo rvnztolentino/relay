@@ -1,7 +1,7 @@
-// Login rate limiter — Phase 6.
+// Login rate limiter - Phase 6.
 // Brute-force guard on POST /api/auth/login: at most 5 FAILED attempts per IP
 // per 15 minutes. Only failures count (recorded by registerLoginFailure from the
-// login handler), and a successful login clears the counter — so logging in
+// login handler), and a successful login clears the counter, so logging in
 // correctly never locks you out. If Redis is unavailable the limiter fails OPEN
 // (allows the request) so a cache outage can't block everyone.
 
@@ -14,7 +14,7 @@ const WINDOW_SECONDS = 15 * 60; // 15 minutes
 const keyFor = (req: Request) => `ratelimit:login:${req.ip ?? 'unknown'}`;
 
 // Middleware: block only once the IP already has MAX_FAILURES failures in the window.
-// It does not increment — counting happens on failed logins via registerLoginFailure.
+// It does not increment; counting happens on failed logins via registerLoginFailure.
 export async function loginRateLimiter(
   req: Request,
   res: Response,

@@ -159,7 +159,7 @@ export function ProjectDetailPage() {
                 <Link to={`/tasks/${t.id}`}>{t.title}</Link>
               </td>
               <td>{statusLabel(t.status)}</td>
-              <td>{t.assignee_name ?? '—'}</td>
+              <td>{t.assignee_name ?? '-'}</td>
               <td>{fmtDate(t.due_date)}</td>
             </tr>
           ))}
@@ -182,7 +182,7 @@ export function ProjectDetailPage() {
         <label>
           Assignee
           <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
-            <option value="">— Unassigned —</option>
+            <option value="">-- Unassigned --</option>
             {members.map((m) => (
               <option key={m.user_id} value={m.user_id}>
                 {m.name}

@@ -1,7 +1,7 @@
-# Relay — local databases only. The Node API runs on the host (see .claude/setup.md).
+# Relay - local databases only. The Node API runs on the host (see .claude/setup.md).
 # Postgres 18 note: the v18 image declares VOLUME /var/lib/postgresql with a
 # version-specific PGDATA (/var/lib/postgresql/18/docker), so the named volume
-# MUST mount at /var/lib/postgresql — NOT the old /var/lib/postgresql/data.
+# MUST mount at /var/lib/postgresql - NOT the old /var/lib/postgresql/data.
 
 services:
   postgres:
