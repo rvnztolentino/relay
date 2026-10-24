@@ -39,11 +39,12 @@ router.get('/:filename', async (req, res) => {
       return res.status(403).json({ error: "You are not a member of this attachment's project" });
     }
 
+    // res.attachment() encodes the uploader-supplied name safely (RFC 6266), so
+    // quotes or non-Latin characters can't break or inject into the header.
+    res.attachment(att.original_name);
     res.type(att.mime_type);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${att.original_name.replace(/"/g, '')}"`,
-    );
+    // The MIME type comes from the uploader; stop browsers sniffing it into HTML.
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.sendFile(path.join(UPLOADS_DIR, filename), (err) => {
       if (err && !res.headersSent) {
         res.status(404).json({ error: 'File is missing on disk' });

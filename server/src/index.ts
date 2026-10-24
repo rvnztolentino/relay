@@ -16,7 +16,10 @@ import { requireAuth } from './middleware/auth.js';
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// inflate:false rejects compressed request bodies (415). No client sends them,
+// and decompressing attacker-supplied gzip/br input is the entry point for
+// CVE-2026-111497 (Node Brotli RCE) and body-parser's trailing-bytes DoS.
+app.use(express.json({ inflate: false }));
 
 app.use('/health', healthRouter);
 app.use('/api/auth', authRouter);
@@ -36,6 +39,17 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
     return res.status(status).json({ error: err.message });
+  }
+  // body-parser rejects bad bodies with a 4xx http-error (malformed JSON,
+  // compressed body, too large). Keep its status but send a fixed message,
+  // since err.message can echo back fragments of the request body.
+  if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500) {
+    const messages: Record<string, string> = {
+      'entity.parse.failed': 'Request body is not valid JSON',
+      'encoding.unsupported': 'Compressed request bodies are not supported',
+      'entity.too.large': 'Request body is too large',
+    };
+    return res.status(err.status).json({ error: messages[err.type] ?? 'Invalid request body' });
   }
   console.error('[server] unhandled error:', err instanceof Error ? err.message : err);
   return res.status(500).json({ error: 'Internal server error' });
