@@ -31,7 +31,7 @@ Relay is a team task board. Members register, create projects, invite each other
 ## Prerequisites
 
 - Docker (OrbStack or Docker Desktop)
-- Node.js 24 or newer
+- Node.js 24.22.1 or newer (earlier versions are affected by CVE-2026-111497; `nvm use` reads `.nvmrc`)
 
 ## Setup
 
